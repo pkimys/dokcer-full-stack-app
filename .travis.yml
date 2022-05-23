@@ -15,6 +15,7 @@ before_install:
 # 실행할 스크립트(테스트 실행)
 script:
   - docker run -e CI=true pkimys/010-react-test-app npm run test -- --coverage
+  - echo "==================> Test Success"
 
 # 테스트 완료 후 할일
 after_success:
@@ -22,12 +23,35 @@ after_success:
   - docker build -t pkimys/docker-backend ./backend
   - docker build -t pkimys/docker-nginx ./nginx
 
-  - echo "==================> Test Success"
-
   - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_ID" --password-stdin
 
   - docker push pkimys/docker-frontend
   - docker push pkimys/docker-backend
   - docker push pkimys/docker-nginx
 
-    - echo "==================> dockerHub push Success"
+  - echo "==================> after_success"
+
+# 배포 설정
+deploy:
+  # 외부 서비스(예, s3, elasticbeanstalk, firebase )
+  provider:
+    elasticbeanstalk
+    # aws 서비스의 물리적 장소, ap-northeast-2 한국
+  region: "ap-northeast-2"
+  # 생성 어플리케이션 이름(엘라스틱인스톨에서 만든이름)
+  app: "docker-full-stack-app"
+  # 생성 어플리케이션의 환경(엘라스틱인스톨에서 환경설정)
+  env: "Dockerfullstackapp-env"
+  # travisCI가 보내준 코드데이터 위치(S3에 자동저장)
+  bucket_name: elasticbeanstalk-ap-northeast-2-213202304145
+  # 생성 어플리케이션 이름과 동일하게 설정
+  bucket_path: "docker-full-stack-app"
+
+  # 언제 배포할 것인가
+  on:
+    # 마스터 브랜치에 업로드 될떄 배포한다
+    branch: master
+
+  # elasticbeanstalk 제어가 가능한 aws IAM 으로 설정
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
