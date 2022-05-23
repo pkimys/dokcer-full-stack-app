@@ -1,0 +1,33 @@
+# 관리자 권한갖기
+sudo: required
+
+# 언어(플랫폼) 선택
+language: generic
+
+# 도커 환경 구성
+services:
+  - docker
+
+# 스크립트를 실행할수 있는 환경 구성 - 스크립트 실행 전 세팅할 것들
+before_install:
+  - docker build -t pkimys/010-react-test-app -f ./frontend/Dockerfile.dev ./frontend
+
+# 실행할 스크립트(테스트 실행)
+script:
+  - docker run -e CI=true pkimys/010-react-test-app npm run test -- --coverage
+
+# 테스트 완료 후 할일
+after_success:
+  - docker build -t pkimys/docker-frontend ./frontend
+  - docker build -t pkimys/docker-backend ./backend
+  - docker build -t pkimys/docker-nginx ./nginx
+
+  - echo "==================> Test Success"
+
+  - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_ID" --password-stdin
+
+  - docker push pkimys/docker-frontend
+  - docker push pkimys/docker-backend
+  - docker push pkimys/docker-nginx
+
+    - echo "==================> dockerHub push Success"
